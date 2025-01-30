@@ -1,0 +1,371 @@
+#!/bin/bash
+# Script to set up coupled AMM15-WW3 on  ARCHER2
+# Note: architecture files and OASIS configuration files 
+# can also be found in the archer2 helpdesk GIT repository:
+# https://github.com/EPCCed/ww3-nemo/tree/main
+set -e 
+display_usage() { 
+   echo
+   echo "  Auto-Config: AMM15-WW3 on ARCHER2"
+   echo "  ***************************************"
+   echo
+   echo "  usage: ${0##*/} set paths in this file "
+   echo
+   exit 1
+	} 
+
+#################################################################################################
+# set paths - user can ammend
+#################################################################################################
+export CONFIG=COW_360cal
+export WORK=/<directory>/<you>/<want>/<to>/<compile>/<in>
+export REPO_DIR=$(pwd)/.. #COW_AMM15 repository directory
+export WORK_DIR=$WORK/$CONFIG
+export XIOS_DIR=$WORK/$CONFIG
+export HPC_TARG=archer2-gnu-r8-d8
+
+#################################################################################################
+# select models and components - user can ammend
+#################################################################################################
+# XIOS version and revision
+XIOS_VER=2.5 
+XIOS_REV=1964
+
+# NEMO model, version and revsion to be checked out via svn 
+NEMO_VER=4.0.4
+NEMO_REV=13653
+
+#WW3 GIT repository and commit
+#NOTE; this GIT is the Met Office development version 7.14.
+#It is updated often; with WW3_REV you are selecting a specific git commit to checkout.
+#This is not the latest version. Use 'git log' to see all commits from the WW3 git repository once it's checked out.   
+WW3_GIT=https://github.com/NOAA-EMC/WW3.git
+WW3_REV=d3ea810da35e9266a4163b4b8f2f4cba5599a5eb
+
+# OASIS GIT repository
+# NOTE; no OASIS_REV set. Will use the latest version. 
+# On 30/01/25; using commit 5e524d1ffcdb6d4177a879fada4a2639d89e3661 (HEAD -> master, origin/master, origin/HEAD)
+# the README.txt in the oasis git repository contains more info on the version downloaded.
+OASIS_GIT=https://gitlab.com/cerfacs/oasis3-mct.git
+
+#################################################################################################
+# user, don't touch below...behave!
+#################################################################################################
+
+#Check path are loaded correctly
+echo $WORK_DIR
+
+if [ ${WORK_DIR:0:1} != "/" ]; then
+  echo "WORK_DIR must use full path"
+  exit 1
+fi
+
+if [ ${XIOS_DIR:0:1} != "/" ]; then
+  echo "XIOS_DIR must use full path"
+  exit 1
+fi
+
+if [ ${REPO_DIR:0:1} != "/" ]; then
+  echo "REPO_DIR must use full path"
+  exit 1
+fi
+
+# Generate work dire if doesn't exist already.
+if [ ! -d "$WORK_DIR" ]; then
+  mkdir $WORK_DIR
+fi
+
+# Move into work directory.
+cd $WORK_DIR
+
+# Check that all correct module are loaded.
+echo "Making sure that the correct modules are loaded"
+
+case "${HPC_TARG}"
+  in
+  archer2-gnu-r8-d8) . $REPO_DIR/ARCHER2/modules/co9_modules_gnu-mpich
+           ;;
+  *)       echo "Machine not recognised"
+           echo "Machines available: archer2-gnu-mpich"
+           exit 1
+esac
+
+# export librbary
+export LD_LIBRARY_PATH=$CRAY_LD_LIBRARY_PATH:$LD_LIBRARY_PATH
+export WWATCH3_NETCDF=NC4
+export NETCDF_CONFIG=$(which nc-config)
+
+################################################################################################
+# Install OASIS3-MCT
+###############################################################################################
+#export ROOT_DIR=$WORK_DIR
+
+if [ ! -d ./oasis3-mct ]; then
+  git clone $OASIS_GIT
+fi
+
+#set up directory structure
+arch_file=${WORK_DIR}/oasis3-mct/util/make_dir/make.${HPC_TARG}
+
+#copy oasis make.file 
+cp $REPO_DIR/ARCHER2/arch/oasis/make.${HPC_TARG} ${arch_file}
+
+#update the make.file with current path to oasis main directory, 
+#and with the name of an installation directory (this gets created when compiling)
+sed -i 's#COUPLETEMPLATE#'"${WORK_DIR}/oasis3-mct"'#' ${arch_file}
+sed -i 's#ARCHTEMPLATE#'"${WORK_DIR}/install/oasis3-mct/${HPC_TARG}"'#' ${arch_file}
+
+# update the path in make.inc (should download with oasis git)
+make_inc=${WORK_DIR}/oasis3-mct/util/make_dir/make.inc
+sed -i 's#include .*#'"include ${arch_file}"'#' ${make_inc}
+
+###############
+# Compile OASIS
+
+cd ${WORK_DIR}/oasis3-mct/util/make_dir
+#remove previous compilations
+make realclean -f TopMakefileOasis3
+#compile
+make -f TopMakefileOasis3
+
+# Make a copy of the log files
+cp COMP.log make.${HPC_TARG}.log
+cp COMP.err make.${HPC_TARG}.err
+
+#################################################################################################
+# Checkout the NEMO code from the SVN Paris repository 
+#################################################################################################
+cd $WORK_DIR
+echo "Checking out NEMO repository"
+
+svn co -r$NEMO_REV http://forge.ipsl.fr/nemo/svn/NEMO/releases/r4.0/r$NEMO_VER --depth empty nemo
+svn co -r$NEMO_REV http://forge.ipsl.fr/nemo/svn/NEMO/releases/r4.0/r$NEMO_VER/src --depth infinity nemo/src
+svn co -r$NEMO_REV http://forge.ipsl.fr/nemo/svn/NEMO/releases/r4.0/r$NEMO_VER/cfgs/SHARED nemo/cfgs/SHARED
+svn export http://forge.ipsl.fr/nemo/svn/NEMO/releases/r4.0/r$NEMO_VER/cfgs/ref_cfgs.txt nemo/cfgs/ref_cfgs.txt
+
+cd nemo
+
+# Now check EXTERNALS revision number before checking out the rest
+for ext_name in mk FCM IOIPSL   
+  do   
+  ext=`svn propget svn:externals | grep $ext_name | cut -c2-`   
+  svn co http://forge.ipsl.fr/nemo/svn/$ext
+done
+
+ext=`svn propget svn:externals | grep makenemo | cut -c2-`
+svn export http://forge.ipsl.fr/nemo/svn/$ext
+#################################################################################################
+
+mkdir arch
+
+# Setup the directory structure
+mkdir $WORK_DIR/nemo/cfgs/AMM15
+
+#################################################################################################
+#   XIOS installation
+#################################################################################################
+echo $XIOS_DIR
+# Choose an appropriate directory for your XIOS installation
+if [ ! -d "$XIOS_DIR" ]; then
+  mkdir $XIOS_DIR
+fi
+cd $XIOS_DIR
+echo $PWD
+echo "Checking out xios repository"
+svn co http://forge.ipsl.fr/ioserver/svn/XIOS/branchs/xios-$XIOS_VER@$XIOS_REV xios
+
+cd xios
+cp $REPO_DIR/ARCHER2/arch/xios/arch-${HPC_TARG}.fcm ./arch/arch-${HPC_TARG}.fcm #copy arch files for coupled config
+cp $REPO_DIR/ARCHER2/arch/xios/arch-generic.path ./arch/arch-${HPC_TARG}.path #copy arch and upadte name
+cp $REPO_DIR/ARCHER2/arch/xios/arch-generic.env ./arch/arch-${HPC_TARG}.env #copy arch and update name
+
+# Update the oasis location template in the path file
+sed -i 's#OASISTEMPLATE#'"${WORK_DIR}/install/oasis3-mct/${HPC_TARG}"'#' \
+    $WORK_DIR/xios/arch/arch-${HPC_TARG}.path
+
+echo "Compiling xios"
+
+# Change the make_xios, use_oasis to true
+sed -i 's|^use_oasis="false"$|use_oasis="true"|' ./make_xios
+
+#compile
+#./make_xios --full --prod --arch ${HPC_TARG} --netcdf_lib netcdf4_par --job 4
+./make_xios --full --prod --use_oasis oasis3_mct --arch ${HPC_TARG} --netcdf_lib netcdf4_par --job 4
+
+# Update the path to xios
+export XIOS_DIR=$XIOS_DIR/xios
+
+#################################################################################################
+# Compile NEMO:
+#################################################################################################
+#copy the template arch file
+cd $WORK_DIR/nemo
+cp $REPO_DIR/ARCHER2/arch/nemo/* ./arch
+
+# Udate Xios and Oasis direcotries in the nemo arch file
+#install=${ROOT_DIR}/install
+#NOTE:in the arch file the following flags should be active for the coupling.
+#%USER_INC            %XIOS_INC %OASIS_INC %NCDF_INC
+#%USER_LIB            %XIOS_LIB %OASIS_LIB %NCDF_LIB
+sed -i 's#OASISTEMPLATE#'"$WORK_DIR/install/oasis3-mct/${HPC_TARG}"'#' ./arch/arch-${HPC_TARG}.fcm
+sed -i 's#XIOSTEMPLATE#'"$WORK_DIR/xios"'#'        ./arch/arch-${HPC_TARG}.fcm
+echo 'AMM15 OCE' >> $WORK_DIR/nemo/cfgs/work_cfgs.txt
+echo "Gathering forcing data"
+
+#set path - update config dir
+export CONFIG_DIR=$WORK_DIR/nemo/cfgs/AMM15
+echo $CONFIG_DIR
+
+# move in nemo dir and copy the amm15 source code
+cd $WORK_DIR/nemo
+mkdir -p $CONFIG_DIR/MY_SRC
+
+#Cope src for AMM15_cO9_p2 with modified dynzdf.f90 and corrected bdytides.F90 
+cp $REPO_DIR/AMM15/MY_SRCs/MY_SRC_360cal/* $CONFIG_DIR/MY_SRC/ #regular 360 days calendar
+
+#copy cpp*.fcm. 
+#Note: must contain oasis key.cpp_AMM15coupled.fcm already contains it. 
+#if starting from a file made for ocean-only you can add the key with: 
+#sed -i 's/$/ key_oasis3/' $CONFIG_DIR/cpp_AMM15.fcm 
+cp $REPO_DIR/AMM15/fcm/cpp_AMM15coupled.fcm $CONFIG_DIR/cpp_AMM15.fcm
+
+#clean previous compiletions
+#echo " clean previous nemo compilation"
+./makenemo -m ${HPC_TARG} -r AMM15 -j 16 clean
+
+#compile
+echo "Compiling nemo AMM15 Config"
+./makenemo -m ${HPC_TARG} -r AMM15 -j 16
+
+#################################################################################################
+# Start setting up run directory
+cd $CONFIG_DIR
+mkdir $CONFIG_DIR/EXPREF
+cp -r $REPO_DIR/EXPREF/setup_test_coupled_360cal.sh $CONFIG_DIR/EXPREF/
+cp $XIOS_DIR/bin/xios_server.exe $CONFIG_DIR/EXPREF/xios_server.exe
+cp $CONFIG_DIR/BLD/bin/nemo.exe  $CONFIG_DIR/EXPREF/nemo.exe
+cp $REPO_DIR/EXPREF/files_test_coupled_360cal/*xml $CONFIG_DIR/EXPREF/.
+
+# turn on oasis flag in iodef.xml 
+# NOTE:do not remove the apparently useless spaces in the line below. I know they're annoying, but they need to be there.  
+sed -i 's|<variable id="using_oasis"               type="bool">false</variable>|<variable id="using_oasis"               type="bool">true</variable>|' $CONFIG_DIR/EXPREF/iodef.xml
+
+echo
+echo "  Auto-Config: AMM15"
+echo "  *****************************"
+echo
+echo "  To run the AMM15 Configuration:"
+echo
+echo "  - cp -rP EXPREF EXP_MYRUN "
+echo "  - link the correct domain_cfg.nc "
+echo "  - update the runscript accordingly "
+echo "      (project code, nodes, modules, etc)"
+echo
+
+echo "  - submit via the sbatch command"
+
+echo
+
+###################################################################################################
+# Compile WW3:
+###################################################################################################
+cd $WORK_DIR
+
+#load netcdf libraries
+echo $NETCDF_DIR /opt/cray/pe/netcdf/4.9.0.1/crayclang/14.0/
+
+# export the oasis directory for compile
+export OASISDIR=${WORK_DIR}/install/oasis3-mct/${HPC_TARG}
+
+# download ww3 repo and expand large files
+if [ ! -d ./ww3 ]; then
+  git clone $WW3_GIT ww3
+  cd ww3
+  git checkout $WW3_REV
+  sh model/bin/ww3_from_ftp.sh
+fi
+
+# Copy comp, link, ad3 and switch files to your ww3/model/bin directory
+# they are set for compile on archer2 with gnu
+cp $REPO_DIR/WW3/*Gnu $WORK_DIR/ww3/model/bin
+cp $REPO_DIR/WW3/switch* $WORK_DIR/ww3/model/bin
+
+# add oasis flags to switch file and chang to CRT0 option
+sed -i 's/$/ COU OASIS OASOCM/' $WORK_DIR/ww3/model/bin/switch_ECOWNDserial
+sed -i 's/CRT1/CRT0/g' $WORK_DIR/ww3/model/bin/switch_ECOWNDserial
+
+sed -i 's/$/ COU OASIS OASOCM/' $WORK_DIR/ww3/model/bin/switch_ECOWNDparal
+sed -i 's/CRT1/CRT0/g' $WORK_DIR/ww3/model/bin/switch_ECOWNDparal
+
+####################################################################
+#Set Fortran compiler Flags
+####################################################################
+#IMPORTANT to be consistent with your NEMO compile
+#check FFLAGS in your nemo arch file
+#the -fdefault-real-8 -fdefault-double-8 -O1 should be there too
+export FC=gfortran
+export FFLAGS="-g -fdefault-real-8 -fdefault-double-8 -O1"
+
+####################################################################
+# setup environment structure
+####################################################################
+#Run without compilation option to setup the environment directories
+cd $WORK_DIR/ww3
+./model/bin/w3_setup model
+
+####################################################################
+# setup environment for parallel compile
+####################################################################
+#Run the model environment setup comand with -s <switch> and -c  <comp> options before compiling.
+#note: the switch_MYSWITCH was called switch_NEW before renaming.
+cd $WORK_DIR/ww3
+./model/bin/w3_setup model -c Gnu -s ECOWNDparal
+# TODO:  Can you automate the reply to the prompt??
+# add later
+
+#######################
+# COMPILE WW3 parallel
+#######################
+cd  $WORK_DIR/ww3/model/bin/
+./w3_make ww3_shel ww3_multi
+#the exectuables should now be in $WORK_DIR/ww3/model/exe/
+
+####################################################################
+# setup environment for serial compile
+####################################################################
+#Run the model environemnt setup comand with -s <switch> and -c  <comp> options before compiling.
+#note: the switch_MYSWITCH was called switch_NEW before renaming.
+cd $WORK_DIR/ww3
+./model/bin/w3_setup model -c Gnu -s ECOWNDserial
+# TODO:  Can you automate the reply to the prompt??
+# add later
+
+#######################
+# COMPILE WW3 serial
+#######################
+cd  $WORK_DIR/ww3/model/bin/
+./w3_make ww3_grid ww3_strt ww3_outf ww3_outp ww3_trck ww3_grib gx_outf gx_outp ww3_bounc ww3_ounf ww3_ounp ww3_prep ww3_prnc
+#the exectuables should now be in $WORK_DIR/ww3/model/exe/
+
+####################################################################
+#Check that the excutable are there
+#had issues with the exe from the first compilation being overwritten
+#by the second compilation. If that happens compile again.
+
+if [ ! -d $WORK_DIR/ww3/model/bin/ww3_shel ]; then
+        cd $WORK_DIR/ww3
+        ./model/bin/w3_setup model -c Gnu -s ECOWNDparal
+        cd  $WORK_DIR/ww3/model/bin/
+        ./w3_make ww3_shel ww3_multi
+fi
+
+#####################################################################
+#  add to run directory setup
+#####################################################################
+# cp executables in the EXPREF dir that you after compiling nemo
+export CONFIG_DIR=$WORK_DIR/nemo/cfgs/AMM15
+
+#link executable
+if [ ! -d $WORK_DIR/nemo/cfgs/AMM15/EXPREF/exe ]; then
+        ln -s $WORK_DIR/ww3/model/exe/ $WORK_DIR/nemo/cfgs/AMM15/EXPREF
+fi

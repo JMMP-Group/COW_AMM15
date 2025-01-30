@@ -1,0 +1,31 @@
+&PSMC 
+    DTIMS=10800.0,
+!    LATMIN=85.0, 
+    RFMAXD=36.0, 
+    AVERG=.TRUE.,
+    LvSMC=2,
+    NBISMC=1711
+/
+&ROTD 
+    PLAT=37.50,
+    PLON=177.50,
+    UNROT=.TRUE.
+/
+&SIN4 
+    BETAMAX=1.48,
+    TAUWSHELTER=0.30
+/
+&SBT1 
+    GAMMA=-0.038
+/
+&SDB1
+    BJALFA=0.2
+/
+&MISC
+    CICE0=0.25,
+    CICEN=0.25,
+    FLAGTR=2,
+    PTM=2
+!    CALTYPE='360_day'
+/
+END OF NAMELISTS

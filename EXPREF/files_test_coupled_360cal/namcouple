@@ -1,0 +1,168 @@
+# Control file for OASIS3-MCT.    - JRULE TAMPERED
+# Oasis reads this file at run-time.  
+#  
+# Description: This file defines the fields used in coupling between:   
+# 
+#    HadGEM3 atmos/ocean models (not cice in this instance).  
+#    Atmos component: UM atmos   
+#    Ocean component: ORCA1, ORCA025  
+#    Ice component:   CICE model integrated into NEMO component 
+#  
+#    This version includes special UM compatible notation in order to define
+#    transients based on interrogating this file. The line preceeding the
+#    definition of each transient must contain notation to define the following:
+#
+#           OCNT indicates the source component (OCN) and grid type (T)
+#           ATMT indicates the target component (ATM) and grid type (T)
+#           OO indicates the order of field exchange. A negative value (e.g. -28) switches 
+#              this field off, excluding it from coupling definitions or exchanges.
+#              If this value is positive, it must be unique. 
+#           RR is an integer indicating the field reference which the 
+#              component models may use to associate the transient with a 
+#              particular model field. 
+#
+# UM compatibility: UM vn8.3 and earlier. If employed by a pre-UM8.3 job   
+#          then lines featuring TRANSDEF directives: will be ignored.  
+# OASIS3-MCT compatible version.
+#
+# Author: R. Hill  
+# Date  : 24/02/2014  
+#  
+# Any line beginning with # is ignored. Blank lines are not allowed.  
+#  
+#########################################################################  
+ $NFIELDS  
+# This is the total number of fields being exchanged.   
+# For the definition of the fields, see under $STRINGS keyword  
+#  
+          2 
+ $END  
+###########################################################################  
+ $RUNTIME  
+# This gives you the total simulated time for this run in seconds   
+   86400 
+ $END  
+###########################################################################  
+ $NLOGPRT  
+# Debugging output level: 0 -> 30  
+# Timer activation level: 0 -> 3  
+  30 0  
+ $END  
+###########################################################################
+#
+# $NWGTOPT
+# ignore bad index
+###########################################################################  
+ $STRINGS  
+#  
+# The above variables are the general parameters for the experiment.  
+# Everything below has to do with the fields being exchanged.  
+#  
+############################################################################  
+#  
+#   
+############################################################################
+#                      OCEAN --->>> WAVE 
+#                  -------------------------
+############################################################################
+#
+#  Ocean currents on grid 1
+#
+# TRANSDEF: OCNU WAVT 30 30 ######################################################  
+O_OCurxw WW3_OSSU 1 3600 2 ocean.nc EXPOUT
+1458 1345 394316 1 nemu ww3t LAG=+0
+R  0  R 0
+#
+LOCTRANS MAPPING
+INSTANT
+rmp_tor1_to_twa1_CONSERVE_FRACAREA_nomask-vn712.nc 
+#
+############################################################################
+#
+#  Ocean currents on grid 2
+#
+# TRANSDEF: OCNV WAVT 31 31 ######################################################  
+O_OCuryw WW3_OSSV 1 3600 2 ocean.nc EXPOUT
+1458 1345 394316 1 nemv ww3t LAG=+0
+R  0  R 0
+#
+LOCTRANS MAPPING
+INSTANT
+rmp_tor1_to_twa1_CONSERVE_FRACAREA_nomask-vn712.nc
+#
+############################################################################
+#                      WAVE --->>> OCEAN
+#                  -------------------------
+############################################################################
+#
+#  Significant wave height 
+#
+# TRANSDEF: WAVT OCNT 44 44 ######################################################  
+#WW3__OHS O_Hsigwa 1 3600 1 wave_restart_20170101.nc EXPOUT
+# 394316 1 1458 1345 ww3t nemt LAG=+600
+# R  0  R 0
+#
+# MAPPING
+# rmp_twa1_to_tor1_CONSERVE_FRACAREA_nomask-vn712.nc
+#
+############################################################################
+#
+#  Stokes drift on grid 1
+#
+# TRANSDEF: WAVT OCNU 46 46 ######################################################  
+#WW3_USSX O_Sdrfx 1 3600 1 wave_restart_20170101.nc EXPOUT
+# 394316 1 1458 1345 ww3t nemu LAG=+600
+# R  0  R 0
+#
+# MAPPING
+# rmp_twa1_to_tor1_CONSERVE_FRACAREA_nomask-vn712.nc
+#
+############################################################################
+#
+#  Stokes drift on grid 2
+#
+# TRANSDEF: WAVT OCNV 47 47 ######################################################  
+#WW3_USSY O_Sdrfy 1 3600 1 wave_restart_20170101.nc EXPOUT
+# 394316 1 1458 1345 ww3t nemv LAG=+600
+# R  0  R 0
+#
+# MAPPING
+# rmp_twa1_to_tor1_CONSERVE_FRACAREA_nomask-vn712.nc
+#
+############################################################################
+#
+#  Mean wave period 
+#
+# TRANSDEF: WAVT OCNT 48 48 ######################################################  
+#WW3__T01 O_WPer 1 3600 1 wave_restart_20170101.nc EXPOUT
+# 394316 1 1458 1345 ww3t nemt LAG=+600
+# R  0  R 0
+#
+# MAPPING
+# rmp_twa1_to_tor1_CONSERVE_FRACAREA_nomask-vn712.nc
+#
+############################################################################
+#
+#  Ocean stress x component in the T grid from waves 
+#
+# TRANSDEF: WAVT OCNU 53 53 ######################################################  
+#WW3_TOCX O_Tauwx 1 3600 1 wave_restart_20170101.nc EXPOUT
+# 394316 1 1458 1345 ww3t nemu LAG=+600
+# R  0  R 0
+#
+# MAPPING
+# rmp_twa1_to_tor1_CONSERVE_FRACAREA_nomask-vn712.nc
+#
+############################################################################
+#
+#  Ocean stress y component in the T grid from waves 
+#
+# TRANSDEF: WAVT OCNV 54 54 ######################################################  
+#WW3_TOCY O_Tauwy 1 3600 1 wave_restart_20170101.nc EXPOUT
+# 394316 1 1458 1345 ww3 nemv LAG=+600
+# R  0  R 0
+#
+# MAPPING
+# rmp_twa1_to_tor1_CONSERVE_FRACAREA_nomask-vn712.nc
+#
+$END

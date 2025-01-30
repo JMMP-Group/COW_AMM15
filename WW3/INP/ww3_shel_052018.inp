@@ -1,0 +1,84 @@
+$ ww3_shel.inp
+$
+$ Description: 
+$    WWIII shell input file for Global configuration.
+$
+$ Current Owner: Chris Bunney
+$
+$ History:
+$ Version    Date     Comment
+$ 1.0     12/11/2007  Initial version (Chris Bunney)
+$ 1.1     19/05/2008  Added new placeholder (SPECTRAL_POINTS) for spectral
+$                     output points. (Chris Bunney)
+$                     
+$
+$ -----------------------------------------------------------------------------
+$
+$
+$ Define inputs to be used (8 lines):
+$ Flag for use and a flag for the definition as a homogenous field (if used)
+$ -----------------------------------------------------------------------------
+   F  F    Water Levels
+   F  F    Currents
+   T  F    Winds
+   F  F    Ice concentrations
+   F  F    Assimilation Data : Mean parameters
+   F  F    Assimilation Data : 1-D spectra
+   F  F    Assimilation Data : 2-D spectra
+$
+$ Time frame of calculation
+$ Start time in yyyymmdd hhmmss format
+$ End time in yyyymmdd hhmmss format
+$ -----------------------------------------------------------------------------
+    20180501 000000
+    20180503 000000
+$
+$ Define output data:
+$
+$ Define output server mode (only needed in parallel version):
+$ Set to 1 for non-parallel code
+$ -----------------------------------------------------------------------------
+   1
+$
+$
+$ TYPE 1 OUTPUT - 3 hourly fields of mean wave parameters:
+$ - first line:  first time (yyyymmdd hhmmss), output interval (s), last time
+$                Output is disabled by setting interval to 0
+$ - second line: Flags to activate output fields, defined in sec. 2.4 of manual
+$ Use updated output list by JGLi 16 Jun 2009
+$ -----------------------------------------------------------------------------
+   20180501 000000 3600 20180501 000000
+    T F T F F  T F T T T  F F F F F  F F F F F  F F F F F  F F F F F  F T F
+$
+$ TYPE 2 OUTPUT - Point output, half hourly
+$ -----------------------------------------------------------------------------
+   20180501 000000 1800 20180503 000000
+$ this is all written in the file points now!!
+$   353.67 51.562 'SWIRS'
+$   355.08 54.375 'NWIRS' 
+$   0    0 'STOPSTRING'
+$
+$ TYPE 3 OUTPUT - Output along track
+$ -----------------------------------------------------------------------------
+   20180501 000000 0 20180503 000000
+$
+$ TYPE 4 OUTPUT - Restart files (no additional data required)
+$ -----------------------------------------------------------------------------
+   20180501 000000 1 20180503 000000
+$
+$ TYPE 5 OUTPUT - Boundary data (no additional data required)
+$ -----------------------------------------------------------------------------
+   20180501 000000 0 20180503 000000
+$
+$ TYPE 6 OUTPUT - Seperated wave field data (dummy for now)
+$ -----------------------------------------------------------------------------
+   20180501 000000 0 20180503 000000
+$
+$ Homogenous field data: (none)
+$ -----------------------------------------------------------------------------
+$  'STP'
+$
+$
+$ -----------------------------------------------------------------------------
+$ END OF INPUT FILE
+$ -----------------------------------------------------------------------------

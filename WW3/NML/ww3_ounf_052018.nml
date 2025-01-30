@@ -1,0 +1,55 @@
+! -------------------------------------------------------------------- !
+! WAVEWATCH III - ww3_ounf.nml - Grid output post-processing           !
+! Level0 NetCDF files
+! -------------------------------------------------------------------- !
+
+
+! -------------------------------------------------------------------- !
+! Define the output fields to postprocess via FIELD_NML namelist
+! -------------------------------------------------------------------- !
+&FIELD_NML
+  FIELD%TIMESTART        =  '20180501 000000'
+  FIELD%TIMESTRIDE       =  '3600'
+  FIELD%TIMECOUNT        =  '720'
+  FIELD%TIMEREF          =  '20180503 000000'
+!LMB don't know what this TIMEREF SHOULD BE???
+  FIELD%TIMESPLIT        =  0
+!  FIELD%LIST             =  'DPT WND ICE HS T02 T0M1 T01 TP DIR SPR DP PHS PTP PEP PDIR PSPR PT01 PT02 CHA TAW MSS UST USS TWO'
+ FIELD%LIST = 'DPT WND ICE HS T02 T0M1 T01 TP DIR SPR DP ABR UBR FBB TBB'
+
+  FIELD%PARTITION        =  '0 1 2 3'
+  FIELD%SAMEFILE         =  T
+  FIELD%TYPE             =  2
+  FIELD%TIMEUNIT         = 'S'
+  FIELD%TIMEVAR          = 'D'
+  FIELD%FCVARS           =  T
+  FIELD%NOVAL            =  0.0
+/
+! Additional fields for coupling/partitioning tests
+!                             UST CHA TWO USS PHS PTP PT02 PTM10'
+
+
+! -------------------------------------------------------------------- !
+! Define the content of the output file via FILE_NML namelist
+! -------------------------------------------------------------------- !
+&FILE_NML
+  FILE%NETCDF        = 4
+/
+
+
+! -------------------------------------------------------------------- !
+! Define the content of the output file via SMC_NML namelist
+! -------------------------------------------------------------------- !
+&SMC_NML
+  SMC%TYPE          = 2
+  SMC%SXO           = -999.9
+  SMC%EXO           = -999.9
+  SMC%SYO           = -999.9
+  SMC%EYO           = -999.9
+  SMC%CELFAC        = 1
+/
+
+
+! -------------------------------------------------------------------- !
+! WAVEWATCH III - end of namelist                                      !
+! --------------------------------
