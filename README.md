@@ -1,2 +1,2 @@
 # COW_AMM15
-Coastal ocean-wave coupled system on amm15 grid
+Coastal Ocean-Wave (COW) coupled configuration on the Atlantic Margin Model domain region. 
