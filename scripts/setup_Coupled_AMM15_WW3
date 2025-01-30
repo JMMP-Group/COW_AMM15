@@ -23,6 +23,7 @@ export REPO_DIR=$(pwd)/.. #COW_AMM15 repository directory
 export WORK_DIR=$WORK/$CONFIG
 export XIOS_DIR=$WORK/$CONFIG
 export HPC_TARG=archer2-gnu-r8-d8
+export NEMO_SRC=$REPO_DIR/AMM15/MY_SRCs/MY_SRC_360cal/
 
 #################################################################################################
 # select models and components - user can ammend
@@ -133,37 +134,10 @@ cp COMP.log make.${HPC_TARG}.log
 cp COMP.err make.${HPC_TARG}.err
 
 #################################################################################################
-# Checkout the NEMO code from the SVN Paris repository 
-#################################################################################################
-cd $WORK_DIR
-echo "Checking out NEMO repository"
-
-svn co -r$NEMO_REV http://forge.ipsl.fr/nemo/svn/NEMO/releases/r4.0/r$NEMO_VER --depth empty nemo
-svn co -r$NEMO_REV http://forge.ipsl.fr/nemo/svn/NEMO/releases/r4.0/r$NEMO_VER/src --depth infinity nemo/src
-svn co -r$NEMO_REV http://forge.ipsl.fr/nemo/svn/NEMO/releases/r4.0/r$NEMO_VER/cfgs/SHARED nemo/cfgs/SHARED
-svn export http://forge.ipsl.fr/nemo/svn/NEMO/releases/r4.0/r$NEMO_VER/cfgs/ref_cfgs.txt nemo/cfgs/ref_cfgs.txt
-
-cd nemo
-
-# Now check EXTERNALS revision number before checking out the rest
-for ext_name in mk FCM IOIPSL   
-  do   
-  ext=`svn propget svn:externals | grep $ext_name | cut -c2-`   
-  svn co http://forge.ipsl.fr/nemo/svn/$ext
-done
-
-ext=`svn propget svn:externals | grep makenemo | cut -c2-`
-svn export http://forge.ipsl.fr/nemo/svn/$ext
-#################################################################################################
-
-mkdir arch
-
-# Setup the directory structure
-mkdir $WORK_DIR/nemo/cfgs/AMM15
-
-#################################################################################################
 #   XIOS installation
 #################################################################################################
+cd $WORK_DIR
+
 echo $XIOS_DIR
 # Choose an appropriate directory for your XIOS installation
 if [ ! -d "$XIOS_DIR" ]; then
@@ -196,6 +170,34 @@ sed -i 's|^use_oasis="false"$|use_oasis="true"|' ./make_xios
 export XIOS_DIR=$XIOS_DIR/xios
 
 #################################################################################################
+# Checkout the NEMO code from the SVN Paris repository 
+#################################################################################################
+cd $WORK_DIR
+echo "Checking out NEMO repository"
+
+svn co -r$NEMO_REV http://forge.ipsl.fr/nemo/svn/NEMO/releases/r4.0/r$NEMO_VER --depth empty nemo
+svn co -r$NEMO_REV http://forge.ipsl.fr/nemo/svn/NEMO/releases/r4.0/r$NEMO_VER/src --depth infinity nemo/src
+svn co -r$NEMO_REV http://forge.ipsl.fr/nemo/svn/NEMO/releases/r4.0/r$NEMO_VER/cfgs/SHARED nemo/cfgs/SHARED
+svn export http://forge.ipsl.fr/nemo/svn/NEMO/releases/r4.0/r$NEMO_VER/cfgs/ref_cfgs.txt nemo/cfgs/ref_cfgs.txt
+
+cd nemo
+
+# Now check EXTERNALS revision number before checking out the rest
+for ext_name in mk FCM IOIPSL   
+  do   
+  ext=`svn propget svn:externals | grep $ext_name | cut -c2-`   
+  svn co http://forge.ipsl.fr/nemo/svn/$ext
+done
+
+ext=`svn propget svn:externals | grep makenemo | cut -c2-`
+svn export http://forge.ipsl.fr/nemo/svn/$ext
+#################################################################################################
+
+mkdir arch
+
+# Setup the directory structure
+mkdir $WORK_DIR/nemo/cfgs/AMM15
+#################################################################################################
 # Compile NEMO:
 #################################################################################################
 #copy the template arch file
@@ -221,7 +223,7 @@ cd $WORK_DIR/nemo
 mkdir -p $CONFIG_DIR/MY_SRC
 
 #Cope src for AMM15_cO9_p2 with modified dynzdf.f90 and corrected bdytides.F90 
-cp $REPO_DIR/AMM15/MY_SRCs/MY_SRC_360cal/* $CONFIG_DIR/MY_SRC/ #regular 360 days calendar
+cp $NEMO_SRC/* $CONFIG_DIR/MY_SRC/ #regular 360 days calendar
 
 #copy cpp*.fcm. 
 #Note: must contain oasis key.cpp_AMM15coupled.fcm already contains it. 
