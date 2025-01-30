@@ -15,7 +15,7 @@ display_usage() {
 	} 
 
 #################################################################################################
-# set paths - user can ammend
+# set paths - user can amend
 #################################################################################################
 export CONFIG=COW_360cal
 export WORK=/<directory>/<you>/<want>/<to>/<compile>/<in>
@@ -26,7 +26,7 @@ export HPC_TARG=archer2-gnu-r8-d8
 export NEMO_SRC=$REPO_DIR/AMM15/MY_SRCs/MY_SRC_360cal/
 
 #################################################################################################
-# select models and components - user can ammend
+# select models and components - user can amend
 #################################################################################################
 # XIOS version and revision
 XIOS_VER=2.5 
