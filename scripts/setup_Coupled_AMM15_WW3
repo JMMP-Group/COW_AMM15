@@ -21,7 +21,7 @@ export CONFIG=COW_360cal
 export WORK=/<directory>/<you>/<want>/<to>/<compile>/<in>
 export REPO_DIR=$(pwd)/.. #COW_AMM15 repository directory
 export WORK_DIR=$WORK/$CONFIG
-export XIOS_DIR=$WORK/$CONFIG
+export XIOS_DIR=$WORK/$CONFIG/xios/
 export HPC_TARG=archer2-gnu-r8-d8
 export NEMO_SRC=$REPO_DIR/AMM15/MY_SRCs/MY_SRC_360cal/
 
@@ -138,12 +138,13 @@ cp COMP.err make.${HPC_TARG}.err
 #################################################################################################
 cd $WORK_DIR
 
-echo $XIOS_DIR
+echo $WORK_DIR
 # Choose an appropriate directory for your XIOS installation
-if [ ! -d "$XIOS_DIR" ]; then
-  mkdir $XIOS_DIR
+if [ ! -d "$WORK_DIR" ]; then
+  mkdir $WORK_DIR
 fi
-cd $XIOS_DIR
+cd $WORK_DIR
+
 echo $PWD
 echo "Checking out xios repository"
 svn co http://forge.ipsl.fr/ioserver/svn/XIOS/branchs/xios-$XIOS_VER@$XIOS_REV xios
@@ -165,9 +166,6 @@ sed -i 's|^use_oasis="false"$|use_oasis="true"|' ./make_xios
 #compile
 #./make_xios --full --prod --arch ${HPC_TARG} --netcdf_lib netcdf4_par --job 4
 ./make_xios --full --prod --use_oasis oasis3_mct --arch ${HPC_TARG} --netcdf_lib netcdf4_par --job 4
-
-# Update the path to xios
-export XIOS_DIR=$XIOS_DIR/xios
 
 #################################################################################################
 # Checkout the NEMO code from the SVN Paris repository 
