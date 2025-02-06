@@ -147,7 +147,7 @@ cd $WORK_DIR
 
 echo $PWD
 echo "Checking out xios repository"
-svn co http://forge.ipsl.fr/ioserver/svn/XIOS/branchs/xios-$XIOS_VER@$XIOS_REV xios
+svn co http://forge.ipsl.fr/ioserver/svn/XIOS/branchs/xios-$XIOS_VER@$XIOS_REV $XIOS_DIR
 
 cd xios
 cp $REPO_DIR/ARCHER2/arch/xios/arch-${HPC_TARG}.fcm ./arch/arch-${HPC_TARG}.fcm #copy arch files for coupled config
@@ -249,22 +249,6 @@ cp $REPO_DIR/EXPREF/files_test_coupled_360cal/*xml $CONFIG_DIR/EXPREF/.
 # turn on oasis flag in iodef.xml 
 # NOTE:do not remove the apparently useless spaces in the line below. I know they're annoying, but they need to be there.  
 sed -i 's|<variable id="using_oasis"               type="bool">false</variable>|<variable id="using_oasis"               type="bool">true</variable>|' $CONFIG_DIR/EXPREF/iodef.xml
-
-echo
-echo "  Auto-Config: AMM15"
-echo "  *****************************"
-echo
-echo "  To run the AMM15 Configuration:"
-echo
-echo "  - cp -rP EXPREF EXP_MYRUN "
-echo "  - link the correct domain_cfg.nc "
-echo "  - update the runscript accordingly "
-echo "      (project code, nodes, modules, etc)"
-echo
-
-echo "  - submit via the sbatch command"
-
-echo
 
 ###################################################################################################
 # Compile WW3:
@@ -369,3 +353,21 @@ export CONFIG_DIR=$WORK_DIR/nemo/cfgs/AMM15
 if [ ! -d $WORK_DIR/nemo/cfgs/AMM15/EXPREF/exe ]; then
         ln -s $WORK_DIR/ww3/model/exe/ $WORK_DIR/nemo/cfgs/AMM15/EXPREF
 fi
+
+#####################################################################
+# END CODE
+#####################################################################
+echo
+echo "  Auto-Config: AMM15-WW3 with OASIS3-MCT"
+echo "  *****************************"
+echo
+echo "  To run the AMM15 Configuration:"
+echo
+echo "  - run direcotry set in EXPREF "
+echo "  - bash setup_test*.sh to configure test run "
+echo "  - link the correct domain_cfg.nc "
+echo "  - update the runscript accordingly "
+echo "      (project code, nodes, modules, etc)"
+echo
+echo "  - submit via the sbatch command"
+echo
